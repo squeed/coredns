@@ -24,7 +24,7 @@ func TestSetupDns64(t *testing.T) {
 		},
 		{
 			`dns64 {
-				translateAll
+				translate_all
 			}`,
 			false,
 			"64:ff9b::/96",
@@ -113,7 +113,7 @@ func TestSetupDns64(t *testing.T) {
 
 	for i, test := range tests {
 		c := caddy.NewTestController("dns", test.inputUpstreams)
-		dns64, err := dns64Parse(&c.Dispenser)
+		dns64, err := dns64Parse(c)
 		if (err != nil) != test.shouldErr {
 			t.Errorf("Test %d expected %v error, got %v for %s", i+1, test.shouldErr, err, test.inputUpstreams)
 		}

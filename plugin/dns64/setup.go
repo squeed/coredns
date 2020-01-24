@@ -9,20 +9,14 @@ import (
 	"github.com/coredns/coredns/plugin/pkg/upstream"
 
 	"github.com/caddyserver/caddy"
-	"github.com/caddyserver/caddy/caddyfile"
 )
 
 var log = clog.NewWithPlugin("dns64")
 
-func init() {
-	caddy.RegisterPlugin("dns64", caddy.Plugin{
-		ServerType: "dns",
-		Action:     setup,
-	})
-}
+func init() { plugin.Register("dns64", setup) }
 
 func setup(c *caddy.Controller) error {
-	dns64, err := dns64Parse(&c.Dispenser)
+	dns64, err := dns64Parse(c)
 	if err != nil {
 		return plugin.Error("dns64", err)
 	}
@@ -35,12 +29,11 @@ func setup(c *caddy.Controller) error {
 	return nil
 }
 
-func dns64Parse(c *caddyfile.Dispenser) (*DNS64, error) {
+func dns64Parse(c *caddy.Controller) (*DNS64, error) {
 	_, defaultPref, _ := net.ParseCIDR("64:ff9b::/96")
 	dns64 := &DNS64{
-		Upstream:     upstream.New(),
-		Prefix:       defaultPref,
-		TranslateAll: false,
+		Upstream: upstream.New(),
+		Prefix:   defaultPref,
 	}
 
 	for c.Next() {
@@ -70,7 +63,7 @@ func dns64Parse(c *caddyfile.Dispenser) (*DNS64, error) {
 					return nil, err
 				}
 				dns64.Prefix = pref
-			case "translateAll":
+			case "translate_all":
 				dns64.TranslateAll = true
 			default:
 				return nil, c.Errf("unknown property '%s'", c.Val())
@@ -80,7 +73,7 @@ func dns64Parse(c *caddyfile.Dispenser) (*DNS64, error) {
 	return dns64, nil
 }
 
-func parsePrefix(c *caddyfile.Dispenser, addr string) (*net.IPNet, error) {
+func parsePrefix(c *caddy.Controller, addr string) (*net.IPNet, error) {
 	_, pref, err := net.ParseCIDR(addr)
 	if err != nil {
 		return nil, err
@@ -89,10 +82,10 @@ func parsePrefix(c *caddyfile.Dispenser, addr string) (*net.IPNet, error) {
 	// Test for valid prefix
 	n, total := pref.Mask.Size()
 	if total != 128 {
-		return nil, c.Errf("'%s' not a valid IPv6 address", pref)
+		return nil, c.Errf("'invalid netmask %d IPv6 address: %q", total, pref)
 	}
 	if n%8 != 0 || n < 32 || n > 96 {
-		return nil, c.Errf("'%s' not a valid prefix length", pref)
+		return nil, c.Errf("invalid prefix length %q", pref)
 	}
 
 	return pref, nil

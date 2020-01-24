@@ -65,7 +65,7 @@ func (d *DNS64) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) 
 // Name implements the Handler interface.
 func (d *DNS64) Name() string { return "dns64" }
 
-// shouldIntercept returns true if the request represents one that is eligible
+// requestShouldIntercept returns true if the request represents one that is eligible
 // for DNS64 rewriting:
 // 1. The request came in over IPv6 (not in RFC)
 // 2. The request is of type AAAA
@@ -81,7 +81,7 @@ func requestShouldIntercept(req *request.Request) bool {
 	return req.QType() == dns.TypeAAAA && req.QClass() == dns.ClassINET
 }
 
-// responseShouldRewrite returns true if the response indicates we should attempt
+// responseShouldDNS64 returns true if the response indicates we should attempt
 // DNS64 rewriting:
 // 1. The response has no valid (RFC 5.1.4) AAAA records (RFC 5.1.1)
 // 2. The response code (RCODE) is not 3 (Name Error) (RFC 5.1.2)

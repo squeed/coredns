@@ -118,7 +118,7 @@ func TestResponseShould(t *testing.T) {
 			},
 			expected: false,
 		},
-		// If there's an AAAA record, but translateAll is configured, then yes
+		// If there's an AAAA record, but translate_all is configured, then yes
 		{
 			resp: dns.Msg{
 				MsgHdr: dns.MsgHdr{
