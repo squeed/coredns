@@ -117,24 +117,22 @@ func (d *DNS64) responseShouldDNS64(origResponse *dns.Msg) bool {
 // and synthesizes the answer. Returns the response message, or error on internal failure.
 func (d *DNS64) DoDNS64(ctx context.Context, w dns.ResponseWriter, r *dns.Msg, origResponse *dns.Msg) (*dns.Msg, error) {
 	req := request.Request{W: w, Req: r} // req is unused
-	AResponse, err := d.Upstream.Lookup(ctx, req, req.Name(), dns.TypeA)
+	resp, err := d.Upstream.Lookup(ctx, req, req.Name(), dns.TypeA)
 	if err != nil {
-		// err here indicates that CoreDNS isn't running a dns server
-		// not that the request failed.
 		return nil, err
 	}
-	out := d.Synthesize(r, origResponse, AResponse)
+	out := d.Synthesize(r, origResponse, resp)
 	return out, nil
 }
 
 // Synthesize merges the AAAA response and the records from the A response
-func (d *DNS64) Synthesize(origReq, origResponse, AResponse *dns.Msg) *dns.Msg {
+func (d *DNS64) Synthesize(origReq, origResponse, resp *dns.Msg) *dns.Msg {
 	ret := dns.Msg{}
 	ret.SetReply(origReq)
 
 	// 5.3.2: DNS64 MUST pass the additional section unchanged
-	ret.Extra = AResponse.Extra
-	ret.Ns = AResponse.Ns
+	ret.Extra = resp.Extra
+	ret.Ns = resp.Ns
 
 	// 5.1.7: The TTL is the minimum of the A RR and the SOA RR. If SOA is
 	// unknown, then the TTL is the minimum of A TTL and 600
@@ -145,9 +143,9 @@ func (d *DNS64) Synthesize(origReq, origResponse, AResponse *dns.Msg) *dns.Msg {
 		}
 	}
 
-	ret.Answer = make([]dns.RR, 0, len(AResponse.Answer))
+	ret.Answer = make([]dns.RR, 0, len(resp.Answer))
 	// convert A records to AAAA records
-	for _, rr := range AResponse.Answer {
+	for _, rr := range resp.Answer {
 		header := rr.Header()
 		// 5.3.3: All other RR's MUST be returned unchanged
 		if header.Rrtype != dns.TypeA {
@@ -155,7 +153,6 @@ func (d *DNS64) Synthesize(origReq, origResponse, AResponse *dns.Msg) *dns.Msg {
 			continue
 		}
 
-		//convert v4 to v6
 		aaaa, _ := to6(d.Prefix, rr.(*dns.A).A)
 
 		// ttl is min of SOA TTL and A TTL

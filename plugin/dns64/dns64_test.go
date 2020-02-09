@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"reflect"
 	"testing"
 
 	"github.com/coredns/coredns/plugin/pkg/dnstest"
@@ -11,7 +12,6 @@ import (
 	"github.com/coredns/coredns/request"
 
 	"github.com/miekg/dns"
-	"github.com/stretchr/testify/assert"
 )
 
 func To6(prefix, address string) (net.IP, error) {
@@ -408,9 +408,13 @@ func TestDNS64(t *testing.T) {
 				t.Fatal(err)
 			}
 			actual := rec.Msg
-			assert.Equal(t, actual.Rcode, rc, "ServeDNS should return real result code")
+			if actual.Rcode != rc {
+				t.Fatalf("ServeDNS should return real result code %q != %q", actual.Rcode, rc)
+			}
 
-			assert.Equal(t, tc.resp, actual, "Final answer should match expected")
+			if !reflect.DeepEqual(actual, tc.resp) {
+				t.Fatalf("Final answer should match expected %q != %q", actual, tc.resp)
+			}
 		})
 	}
 }

@@ -89,7 +89,7 @@ func parsePrefix(c *caddy.Controller, addr string) (*net.IPNet, error) {
 	// Test for valid prefix
 	n, total := pref.Mask.Size()
 	if total != 128 {
-		return nil, c.Errf("'invalid netmask %d IPv6 address: %q", total, pref)
+		return nil, c.Errf("invalid netmask %d IPv6 address: %q", total, pref)
 	}
 	if n%8 != 0 || n < 32 || n > 96 {
 		return nil, c.Errf("invalid prefix length %q", pref)
